@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Shorthand</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>HTML Shorthand</h1>
+        <p>Write less HTML.</p>
+    </header>
+
+    <main>
+        <label for="input">Your shorthand</label>
+        <textarea id="input" spellcheck="false">h1#title=Hello world
+p.intro=Welcome to my website!
+div.container=
+  h2=About me
+  p=This is a nested paragraph.
+  a[href="https://example.com"]=Visit example
+button.primary=Click me
+br
+hr
+img[src="cat.jpg"][alt="A cat"]
+input[type="email"][placeholder="Your email"]</textarea>
+
+        <button id="generate">Generate</button>
+
+        <h2>Generated HTML</h2>
+        <pre id="output"></pre>
+
+        <button id="copy">Copy HTML</button>
+
+        <h2>Preview</h2>
+        <div id="preview"></div>
+    </main>
+</body>
+</html>
