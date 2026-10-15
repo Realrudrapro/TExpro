@@ -43,34 +43,36 @@ function escapeHTML(value) {
 function parseLine(line) {
     const separator = line.indexOf("=");
 
-    let definition;
-    let content;
+    const definition = (
+        separator === -1
+            ? line
+            : line.slice(0, separator)
+    ).trim();
 
-    if (separator === -1) {
-        definition = line.trim();
-        content = "";
-    } else {
-        definition = line.slice(0, separator).trim();
-        content = line.slice(separator + 1);
-    }
+    const content = separator === -1
+        ? ""
+        : line.slice(separator + 1);
 
     if (definition === "!DOCTYPE html") {
+        if (separator !== -1) {
+            throw new Error("DOCTYPE cannot have content.");
+        }
+
         return { doctype: true };
     }
 
-    const tagMatch = definition.match(/^([a-z][a-z0-9-]*)/i);
+    const match = definition.match(/^([a-z][a-z0-9-]*)(.*)$/i);
 
-    if (!tagMatch) {
-        throw new Error(`Invalid HTML shorthand: ${line}`);
+    if (!match) {
+        throw new Error(`Invalid syntax: "${line}"`);
     }
 
-    const tag = tagMatch[1].toLowerCase();
+    const tag = match[1].toLowerCase();
+    const remainder = match[2];
 
     if (!validTags.has(tag)) {
-        throw new Error(`Unknown HTML tag: ${tag}`);
+        throw new Error(`Unknown HTML tag: "${tag}"`);
     }
-
-    const remainder = definition.slice(tagMatch[0].length);
 
     const node = {
         tag,
@@ -79,58 +81,66 @@ function parseLine(line) {
         children: []
     };
 
-    const tokenPattern =
-        /\.([a-zA-Z_][\w-]*)|#([a-zA-Z_][\w-]*)|\[\s*([^\]]+)\s*\]/g;
+    let position = 0;
 
-    let match;
-    let consumed = "";
+    while (position < remainder.length) {
+        const rest = remainder.slice(position);
 
-    while ((match = tokenPattern.exec(remainder)) !== null) {
-        const gap = remainder.slice(consumed.length, match.index);
+        const classMatch = rest.match(/^\.([a-zA-Z_][\w-]*)/);
+        const idMatch = rest.match(/^#([a-zA-Z_][\w-]*)/);
+        const attrMatch = rest.match(/^\[([^\]]+)\]/);
 
-        if (gap.trim() !== "") {
-            throw new Error(`Invalid syntax: ${line}`);
-        }
-
-        consumed = remainder.slice(0, tokenPattern.lastIndex);
-
-        if (match[1]) {
+        if (classMatch) {
             const existing = node.attributes.class || "";
             node.attributes.class =
-                `${existing} ${match[1]}`.trim();
-        } else if (match[2]) {
+                `${existing} ${classMatch[1]}`.trim();
+
+            position += classMatch[0].length;
+            continue;
+        }
+
+        if (idMatch) {
             if (node.attributes.id !== undefined) {
-                throw new Error(`Duplicate ID declaration: ${line}`);
+                throw new Error(`Duplicate ID declaration: "${line}"`);
             }
 
-            node.attributes.id = match[2];
-        } else {
-            const attributeMatch = match[3].match(
-                /^\s*([^\s=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|(.+)))?\s*$/
+            node.attributes.id = idMatch[1];
+            position += idMatch[0].length;
+            continue;
+        }
+
+        if (attrMatch) {
+            const attribute = attrMatch[1].match(
+                /^([a-zA-Z_:][a-zA-Z0-9_.:-]*)(?:=(?:"([^"]*)"|'([^']*)'|([^\s]+)))?$/
             );
 
-            if (!attributeMatch) {
-                throw new Error(`Invalid attribute: ${line}`);
+            if (!attribute) {
+                throw new Error(`Invalid attribute syntax: "${line}"`);
             }
 
-            const name = attributeMatch[1].toLowerCase();
+            const name = attribute[1].toLowerCase();
 
             if (Object.hasOwn(node.attributes, name)) {
-                throw new Error(`Duplicate attribute "${name}": ${line}`);
+                throw new Error(`Duplicate attribute: "${name}"`);
             }
 
             const value =
-                attributeMatch[2] ??
-                attributeMatch[3] ??
-                attributeMatch[4];
+                attribute[2] ??
+                attribute[3] ??
+                attribute[4];
 
             node.attributes[name] =
                 value === undefined ? null : value;
+
+            position += attrMatch[0].length;
+            continue;
         }
+
+        throw new Error(`Unexpected syntax: "${rest}"`);
     }
 
-    if (consumed.length !== remainder.length) {
-        throw new Error(`Invalid syntax: ${line}`);
+    if (voidTags.has(tag) && content.trim()) {
+        throw new Error(`The "${tag}" tag cannot contain text.`);
     }
 
     return node;
@@ -141,17 +151,18 @@ function parseShorthand(text) {
     const stack = [{ indent: -1, children: root }];
 
     for (const originalLine of text.split(/\r?\n/)) {
-        if (!originalLine.trim()) {
-            continue;
-        }
+        if (!originalLine.trim()) continue;
 
         const indent = originalLine.match(/^[ \t]*/)[0]
             .replace(/\t/g, "    ").length;
 
-        const line = originalLine.trim();
-        const node = parseLine(line);
+        const node = parseLine(originalLine.trim());
 
         if (node.doctype) {
+            if (root.some(item => item.doctype)) {
+                throw new Error("DOCTYPE can only appear once.");
+            }
+
             root.unshift(node);
             continue;
         }
@@ -185,13 +196,11 @@ function renderHTML(nodes, depth = 0) {
         }
 
         const attributes = Object.entries(node.attributes)
-            .map(([name, value]) => {
-                if (value === null) {
-                    return ` ${name}`;
-                }
-
-                return ` ${name}="${escapeHTML(value)}"`;
-            })
+            .map(([name, value]) =>
+                value === null
+                    ? ` ${name}`
+                    : ` ${name}="${escapeHTML(value)}"`
+            )
             .join("");
 
         const opening = `${indent}<${node.tag}${attributes}>`;
@@ -211,28 +220,20 @@ function renderHTML(nodes, depth = 0) {
             ...children
         ];
 
-        if (inside.length === 0) {
-            return `${opening}</${node.tag}>`;
-        }
-
-        return `${opening}\n${inside.join("\n")}\n${indent}</${node.tag}>`;
+        return inside.length
+            ? `${opening}\n${inside.join("\n")}\n${indent}</${node.tag}>`
+            : `${opening}</${node.tag}>`;
     }).join("\n");
 }
 
 function renderPreview(nodes, parent) {
     for (const node of nodes) {
-        if (node.doctype) {
-            continue;
-        }
+        if (node.doctype) continue;
 
         const element = document.createElement(node.tag);
 
         for (const [name, value] of Object.entries(node.attributes)) {
-            if (value === null) {
-                element.setAttribute(name, "");
-            } else {
-                element.setAttribute(name, value);
-            }
+            element.setAttribute(name, value ?? "");
         }
 
         if (node.content) {
@@ -255,7 +256,7 @@ function generateHTML() {
         preview.replaceChildren();
         renderPreview(nodes, preview);
     } catch (error) {
-        output.textContent = error.message;
+        output.textContent = `Error: ${error.message}`;
         output.dataset.html = "";
         preview.replaceChildren();
     }
@@ -266,6 +267,11 @@ generate.addEventListener("click", generateHTML);
 copy.addEventListener("click", async () => {
     const html = output.dataset.html || "";
 
+    if (!html) {
+        copy.textContent = "Nothing valid to copy";
+        return;
+    }
+
     try {
         await navigator.clipboard.writeText(html);
         copy.textContent = "Copied!";
@@ -274,7 +280,7 @@ copy.addEventListener("click", async () => {
             copy.textContent = "Copy HTML";
         }, 1500);
     } catch {
-        copy.textContent = "Copy unavailable — select the output manually.";
+        copy.textContent = "Copy failed";
     }
 });
 
