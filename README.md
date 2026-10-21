@@ -1,4 +1,4 @@
-# HTML Shorthand
+# TExpro
 
 A small, browser-based compiler that turns `.hz` source into standard HTML, CSS, and JavaScript. It uses plain JavaScript and does not require Node.js, a framework, or a build step.
 
@@ -14,7 +14,7 @@ For GitHub Pages, the generated `index.html` should be at the published root.
 
 ## Syntax
 
-```text
+text
 title=My Website
 description=A description
 
@@ -33,7 +33,6 @@ css:
 
 js:
   document.querySelector(".special").textContent = "Updated!";
-```
 
 ### Elements
 
