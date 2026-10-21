@@ -1,0 +1,250 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    color-scheme: dark;
+    --background: #10131a;
+    --panel: #191e29;
+    --panel-alt: #121721;
+    --border: #30394a;
+    --text: #f1f5fb;
+    --muted: #a5b0c2;
+    --accent: #8b9cff;
+    --accent-strong: #667cff;
+    --danger: #ff9b9b;
+    --success: #93e7b1;
+}
+
+body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 28px clamp(18px, 4vw, 56px);
+    border-bottom: 1px solid var(--border);
+}
+
+.eyebrow {
+    margin: 0 0 8px;
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+h1, h2, p {
+    margin-top: 0;
+}
+
+h1 {
+    margin-bottom: 8px;
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -0.04em;
+}
+
+.subtitle, .panel-heading p, .preview-heading p, .app-footer p {
+    margin-bottom: 0;
+    color: var(--muted);
+}
+
+.repo-link {
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+    padding: 22px clamp(12px, 3vw, 36px);
+}
+
+.editor-panel, .output-panel {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--panel);
+}
+
+.panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.panel-heading h2, .preview-heading h2 {
+    margin-bottom: 4px;
+    font-size: 1.15rem;
+}
+
+.panel-heading p, .preview-heading p {
+    font-size: 0.88rem;
+}
+
+textarea {
+    display: block;
+    width: 100%;
+    min-height: 440px;
+    padding: 16px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    outline: none;
+    background: var(--panel-alt);
+    color: var(--text);
+    font: 14px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace;
+    tab-size: 2;
+}
+
+textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px #8b9cff22;
+}
+
+.button {
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 14px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.button.primary {
+    background: var(--accent-strong);
+    border-color: var(--accent-strong);
+    color: white;
+}
+
+.button.secondary {
+    background: #222a39;
+    color: var(--text);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.status {
+    min-height: 1.4em;
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.status.error {
+    color: var(--danger);
+}
+
+.status.success {
+    color: var(--success);
+}
+
+.file-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.file-tab {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel-alt);
+    color: var(--muted);
+    cursor: pointer;
+    font: 0.85rem ui-monospace, monospace;
+}
+
+.file-tab.active {
+    border-color: var(--accent);
+    color: var(--text);
+    background: #2b3450;
+}
+
+.generated-code {
+    min-height: 240px;
+    max-height: 440px;
+    overflow: auto;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel-alt);
+    color: #dce5ff;
+    white-space: pre;
+    font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+#downloadCurrent {
+    margin-top: 10px;
+}
+
+.preview-heading {
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+#preview {
+    display: block;
+    width: 100%;
+    height: 300px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: white;
+}
+
+.app-footer {
+    padding: 0 24px 24px;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+code {
+    color: #c7d0ff;
+}
+
+@media (max-width: 850px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    textarea {
+        min-height: 320px;
+    }
+}
+
+@media (max-width: 520px) {
+    .app-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .panel-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

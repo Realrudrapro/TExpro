@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A browser-based compiler for HTML Shorthand.">
+    <title>HTML Shorthand Compiler</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="src/components.js" defer></script>
+    <script src="src/parser.js" defer></script>
+    <script src="src/compiler.js" defer></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <header class="app-header">
+        <div>
+            <p class="eyebrow">NO FRAMEWORKS · NO NODE.JS</p>
+            <h1>HTML Shorthand</h1>
+            <p class="subtitle">Write shorthand. Compile real HTML, CSS, and JavaScript.</p>
+        </div>
+        <a class="repo-link" href="https://github.com/" target="_blank" rel="noreferrer">GitHub-ready</a>
+    </header>
+
+    <main class="workspace">
+        <section class="editor-panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Source</h2>
+                    <p>Edit your <code>.hz</code> code</p>
+                </div>
+                <button id="resetExample" class="button secondary" type="button">Reset example</button>
+            </div>
+            <textarea id="source" spellcheck="false" aria-label="HTML Shorthand source"></textarea>
+            <div class="actions">
+                <button id="compile" class="button primary" type="button">Compile</button>
+                <button id="downloadAll" class="button secondary" type="button" disabled>Download files</button>
+            </div>
+            <p id="status" class="status" role="status">Ready to compile.</p>
+        </section>
+
+        <section class="output-panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Generated files</h2>
+                    <p>Standard files for any static host</p>
+                </div>
+            </div>
+            <div class="file-tabs" role="tablist" aria-label="Generated file">
+                <button class="file-tab active" data-file="html" role="tab" aria-selected="true" type="button">index.html</button>
+                <button class="file-tab" data-file="css" role="tab" aria-selected="false" type="button">style.css</button>
+                <button class="file-tab" data-file="js" role="tab" aria-selected="false" type="button">script.js</button>
+            </div>
+            <pre id="generated" class="generated-code"><code>Compile your source to see the output.</code></pre>
+            <button id="downloadCurrent" class="button secondary" type="button" disabled>Download current file</button>
+            <div class="preview-heading">
+                <h2>Preview</h2>
+                <p>Preview runs in a separate sandboxed frame.</p>
+            </div>
+            <iframe id="preview" title="Website preview" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>HTML Shorthand is a small experimental compiler. Review generated code before publishing.</p>
+    </footer>
+</body>
+</html>

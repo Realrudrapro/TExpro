@@ -1,0 +1,21 @@
+title=Hello World
+description=My first HTML Shorthand page
+
+nav#top
+  strong=Hello World
+
+hero
+  h1=Hello, world!
+  p=This is my first HTML Shorthand page.
+  button#hello=Say hello
+
+css:
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+  }
+
+js:
+  document.getElementById("hello").addEventListener("click", () => {
+    alert("Hello from HTML Shorthand!");
+  });
