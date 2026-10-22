@@ -6,19 +6,19 @@
         "a abbr address article aside audio b blockquote body br button " +
         "canvas caption cite code col colgroup data datalist dd del details " +
         "dfn dialog div dl dt em fieldset figcaption figure footer form h1 h2 " +
-        "h3 h4 h5 h6 head header hgroup hr i iframe img input ins kbd label " +
-        "legend li main map mark menu meter nav noscript object ol optgroup " +
-        "option output p picture pre progress q rp rt ruby s samp script " +
-        "search section select slot small source span strong style sub " +
-        "summary sup table tbody td template textarea tfoot th thead time " +
-        "title tr track u ul var video wbr"
+        "h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd " +
+        "label legend li link main map mark menu meta meter nav noscript " +
+        "object ol optgroup option output p picture pre progress q rp rt ruby " +
+        "s samp script search section select slot small source span strong " +
+        "style sub summary sup table tbody td template textarea tfoot th " +
+        "thead time title tr track u ul var video wbr"
     ).split(/\s+/));
 
     const VOID_TAGS = new Set((
         "area base br col embed hr img input link meta param source track wbr"
     ).split(/\s+/));
 
-    const COMPONENT_TAGS = {
+    const COMPONENTS = {
         nav: "nav",
         card: "section",
         hero: "section",
@@ -34,12 +34,11 @@
         const lines = source.replace(/\r\n?/g, "\n").split("\n");
         const nodes = [];
         const stack = [{ indent: -1, children: nodes }];
-
-        const cssLines = [];
-        const jsLines = [];
+        const css = [];
+        const js = [];
 
         const settings = {
-            title: "HTML Shorthand App",
+            title: "",
             description: "",
             lang: "en"
         };
@@ -70,7 +69,7 @@
 
             if (!original.trim()) {
                 if (blockMode) {
-                    (blockMode === "css" ? cssLines : jsLines).push("");
+                    (blockMode === "css" ? css : js).push("");
                 }
                 continue;
             }
@@ -82,13 +81,9 @@
 
             if (blockMode) {
                 if (indent > blockIndent) {
-                    const content = original.slice(
-                        Math.min(original.length, blockIndent + 2)
+                    (blockMode === "css" ? css : js).push(
+                        original.slice(Math.min(original.length, blockIndent + 2))
                     );
-
-                    (blockMode === "css" ? cssLines : jsLines)
-                        .push(content);
-
                     continue;
                 }
 
@@ -99,12 +94,15 @@
                 continue;
             }
 
-            const metadata = line.match(
-                /^(title|description|lang)=(.*)$/
-            );
+            const metadata = line.match(/^(title|description|lang)=(.*)$/);
 
             if (metadata) {
                 settings[metadata[1]] = metadata[2];
+
+                if (metadata[1] === "lang" && !settings.lang) {
+                    settings.lang = "en";
+                }
+
                 continue;
             }
 
@@ -120,8 +118,7 @@
 
             if (!match) {
                 throw new Error(
-                    "Invalid syntax on line " +
-                    (index + 1) + ": " + line
+                    "Invalid syntax on line " + (index + 1) + ": " + line
                 );
             }
 
@@ -136,7 +133,7 @@
 
             const name = rawTag.toLowerCase();
             const isComponent = Object.prototype.hasOwnProperty.call(
-                COMPONENT_TAGS,
+                COMPONENTS,
                 name
             );
 
@@ -146,10 +143,6 @@
                     (index + 1) + ": " + name
                 );
             }
-
-            const tag = isComponent
-                ? COMPONENT_TAGS[name]
-                : name;
 
             const attributes = {};
 
@@ -175,30 +168,31 @@
                 ) {
                     const attributeName = attributeMatch[1];
 
-                    const attributeValue =
+                    const value =
                         attributeMatch[2] ??
                         attributeMatch[3] ??
                         attributeMatch[4] ??
-                        null;
+                        "";
 
                     if (/^on/i.test(attributeName)) {
                         throw new Error(
-                            "Inline event handlers are not supported. " +
-                            "Use the js: block instead."
+                            "Inline event-handler attributes are not supported."
                         );
                     }
 
-                    attributes[attributeName] = attributeValue;
+                    attributes[attributeName] = value;
                 }
             }
+
+            const tag = isComponent ? COMPONENTS[name] : name;
 
             const node = {
                 type: "element",
                 tag,
+                component: isComponent ? name : null,
                 attributes,
                 content: content === undefined ? "" : content,
-                children: [],
-                component: isComponent ? name : null
+                children: []
             };
 
             addNode(node, indent);
@@ -206,16 +200,14 @@
 
         return {
             nodes,
-            css: cssLines.join("\n"),
-            js: jsLines.join("\n"),
+            css: css.join("\n"),
+            js: js.join("\n"),
             settings
         };
     }
 
     global.HSParser = {
         parse,
-        VALID_TAGS,
-        VOID_TAGS,
-        COMPONENTS: new Set(Object.keys(COMPONENT_TAGS))
+        VOID_TAGS
     };
 })(window);
