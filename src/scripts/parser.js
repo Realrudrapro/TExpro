@@ -156,9 +156,7 @@
             addNode(node, indent);
         }
 
-        if (blockMode) {
-            throw new Error("The " + blockMode + ": block is empty or unfinished.");
-        }
+        
 
         return {
             tree: root,
