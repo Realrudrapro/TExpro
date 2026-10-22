@@ -1,3 +1,4 @@
+
 (function () {
     "use strict";
 
@@ -72,9 +73,9 @@ js:
     let files = null;
     let activeFile = "html";
 
-    function setStatus(message, type) {
+    function setStatus(message, type = "") {
         status.textContent = message;
-        status.className = "status" + (type ? ` ${type}` : "");
+        status.className = "status" + (type ? " " + type : "");
     }
 
     function renderCurrentFile() {
@@ -91,48 +92,130 @@ js:
         });
     }
 
-    function downloadFile(filename, content) {
-        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    function escapeHTML(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    function buildPreviewDocument(output) {
+        let html = output["index.html"];
+        const css = output["style.css"];
+        const js = output["script.js"];
+
+        html = html.replace(
+            /<link\b[^>]*\bhref=["']style\.css["'][^>]*\/?>/i,
+            () => "<style>\n" +
+                css.replace(/<\/style/gi, "<\\/style") +
+                "\n</style>"
+        );
+
+        html = html.replace(
+            /<script\b[^>]*\bsrc=["']script\.js["'][^>]*>\s*<\/script>/gi,
+            ""
+        );
+
+        const inlineScript = js
+            ? "<script>\n" +
+                js.replace(/<\/script/gi, "<\\/script") +
+                "\n<\/script>"
+            : "";
+
+        if (/<\/body\s*>/i.test(html)) {
+            html = html.replace(/<\/body\s*>/i, inlineScript + "\n</body>");
+        } else {
+            html += inlineScript;
+        }
+
+        return html;
     }
 
     function compileSource() {
         try {
-            files = window.HSCompiler.compile(source.value);
+            if (!window.HSParser ||
+                typeof window.HSParser.parse !== "function") {
+                throw new Error(
+                    "The parser did not load. Check src/parser.js."
+                );
+            }
+
+            if (!window.HSComponents ||
+                typeof window.HSComponents.get !== "function") {
+                throw new Error(
+                    "The components did not load. Check src/components.js."
+                );
+            }
+
+            if (!window.HSCompiler ||
+                typeof window.HSCompiler.compile !== "function") {
+                throw new Error(
+                    "The compiler did not load. Check src/compiler.js."
+                );
+            }
+
+            const output = window.HSCompiler.compile(source.value);
+
+            if (!output ||
+                typeof output["index.html"] !== "string" ||
+                typeof output["style.css"] !== "string" ||
+                typeof output["script.js"] !== "string") {
+                throw new Error(
+                    "The compiler did not return all three output files."
+                );
+            }
+
+            files = output;
             renderCurrentFile();
 
-            const previewDocument = [
-                files["index.html"].replace(
-                    '<link rel="stylesheet" href="style.css">',
-                    "<style>" + files["style.css"].replace(/<\/style/gi, "<\\/style") + "</style>"
-                ).replace(
-                    '<script src="script.js" defer></script>',
-                    ""
-                ).replace(
-                    "</body>",
-                    "<script>" + files["script.js"].replace(/<\/script/gi, "<\\/script") + "</script></body>"
-                )
-            ].join("");
+            preview.srcdoc = buildPreviewDocument(output);
 
-            preview.srcdoc = previewDocument;
             downloadAll.disabled = false;
-            setStatus("Compiled successfully. Your output is ready to download.", "success");
+
+            setStatus(
+                "Compiled successfully. HTML, CSS, and JavaScript are ready.",
+                "success"
+            );
         } catch (error) {
             files = null;
             renderCurrentFile();
-            preview.srcdoc = "<!doctype html><body style='font:16px system-ui;padding:24px;color:#a00'><h2>Compilation failed</h2><pre style='white-space:pre-wrap'>" +
-                String(error.message).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") +
-                "</pre></body>";
+
+            preview.srcdoc =
+                "<!DOCTYPE html><html><body style=" +
+                "'font:16px system-ui;padding:24px;color:#a00'>" +
+                "<h2>Compilation failed</h2><pre>" +
+                escapeHTML(error.message || String(error)) +
+                "</pre></body></html>";
+
             downloadAll.disabled = true;
-            setStatus(error.message, "error");
+            setStatus(
+                "Compilation failed: " +
+                (error.message || String(error)),
+                "error"
+            );
+
+            console.error("HTML Shorthand compilation error:", error);
         }
+    }
+
+    function downloadFile(filename, content) {
+        const blob = new Blob(
+            [content],
+            { type: "text/plain;charset=utf-8" }
+        );
+
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+
+        anchor.href = url;
+        anchor.download = filename;
+
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     compileButton.addEventListener("click", compileSource);
@@ -151,16 +234,24 @@ js:
 
     downloadCurrent.addEventListener("click", () => {
         if (!files) return;
-        downloadFile(filenames[activeFile], files[filenames[activeFile]]);
+
+        downloadFile(
+            filenames[activeFile],
+            files[filenames[activeFile]]
+        );
     });
 
     downloadAll.addEventListener("click", () => {
         if (!files) return;
+
         Object.entries(files).forEach(([filename, content], index) => {
-            setTimeout(() => downloadFile(filename, content), index * 250);
+            setTimeout(() => {
+                downloadFile(filename, content);
+            }, index * 250);
         });
     });
 
     source.value = EXAMPLE;
+    renderCurrentFile();
     compileSource();
 })();
